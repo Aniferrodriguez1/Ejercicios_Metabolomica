@@ -1,0 +1,113 @@
+---
+title: "Grafica de dispersión"
+author: "Ana Fernanda Luna"
+date: "2024-03-22"
+output: html_document
+---
+---
+#chunks
+Ejecución de los paquetes
+```{r}
+library(pacman)
+p_load("readr", #para llamar las bases de datos
+       "ggplot2", #para graficar
+       "ggrepel", #para etiquetar datos en una gráfica
+       "dplyr") #facilita el manejo de datos
+```
+Llamado de la base de datos, si quiero llamar una base de datos solo cambiar lo que esté comillas
+```{r}
+datos <- read_csv(file="https://raw.githubusercontent.com/ManuelLaraMVZ/Transcript-mica/main/datos_miRNAs.csv")
+head(datos)
+```
+
+Manejo de datos de controles 
+1. Extraer los genes de referencia que tienen el nombre "control" en la segunda columna
+2. Obtener el promedio de las columna
+```{r}
+controles <- datos %>% 
+  filter(Condicion=="Control")
+head(controles)
+
+promedio_controles <-  controles %>% 
+  summarise(Mean_C1 = mean(Cx1),
+            Mean_C2 = mean(Cx2),
+            Mean_C3 = mean(Cx3),
+            Mean_T1 = mean(T1),
+            Mean_T2 = mean(T2),
+            Mean_T3 = mean(T3)) %>% 
+  mutate(Gen="Promedio_controles") %>% 
+  select(7,1,2,3,4,5,6) #reordenar las columnas
+promedio_controles
+```
+Obtener los genes de interés que tienen la etiqueta "Target" en 
+la segunda columna 
+```{r}
+genes <- datos %>% 
+  filter(Condicion=="Target") %>% 
+  select(-2)
+head(genes)
+```
+Calcular el Delta Ct (de cada gen, en cada columna, con su correspondiente 
+control(referencia))
+```{r}
+DCT <- genes %>% 
+  mutate(DCT_C1=2^-(Cx1-promedio_controles$Mean_C1), #Lo que va despues del "$" es el nombre de la columna"
+         DCT_C2=2^-(Cx2-promedio_controles$Mean_C2),
+         DCT_C3=2^-(Cx3-promedio_controles$Mean_C3),
+         DCT_T1=2^-(T1-promedio_controles$Mean_T1),
+         DCT_T2=2^-(T2-promedio_controles$Mean_T2),
+         DCT_T3=2^-(T3-promedio_controles$Mean_T3)) %>% 
+  select(-2,-3,-4,-5,-6,-7) ###quitar las primeras columnas y sólo dejar los DCT
+
+DCT
+```
+
+Obtener promedio de los grupos
+```{r}
+promedio_genes<-DCT %>% 
+  mutate(Mean_DCT_Cx=(DCT_C1+DCT_C2+DCT_C3)/3,
+         Mean_DCT_Tx=(DCT_T1+DCT_T2+DCT_T3)/3)
+
+
+promedio_genes
+```
+Establecer límites para la gráfica 
+```{r}
+top_10 <- promedio_genes %>%
+  select (1,8,9) %>%
+  top_n(10, Mean_DCT_Cx) %>%
+  arrange(desc(Mean_DCT_Cx))
+
+head(top_10)
+```
+
+
+Graficar
+```{r}
+grafica_dispersion <- ggplot(promedio_genes,
+                             mapping = aes(x=Mean_DCT_Cx,
+                                           y=Mean_DCT_Tx))+
+  geom_point(size = 2, 
+             color = "purple")+
+  labs(title = "Condición control vs tratamiento",
+       caption = "Creador = Ana Fernanda Luna",
+       x = expression("Condición Control" ~ "-DCT"), 
+       y = expression("Tratamiento" ~ "-DCT")) +
+  geom_smooth(method = "lm", color =("pink")) +
+  theme_minimal() +
+  theme(
+    panel.background = element_rect(fill = "white"), 
+    panel.grid.major = element_blank(), 
+    axis.text = element_text(family = "Arial", size = 12), 
+    axis.title = element_text(family = "Arial", size = 14, face = "bold"), 
+    legend.title = element_text(family = "Arial", size = 14), 
+    legend.text = element_text(family = "Arial", size = 14))+
+  geom_label_repel(data = top_10,
+                   mapping = aes(x = Mean_DCT_Cx,
+                                 y = Mean_DCT_Tx,
+                                 label = Gen),
+                   label.padding = unit (0.2, "lines"))
+
+grafica_dispersion
+```
+
