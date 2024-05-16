@@ -97,40 +97,10 @@ ValoresVolcanoP <- FCyPV %>%
 ValoresVolcanoP
 ```
 ```{r}
-Volcano <- ggplot(data = ValoresVolcanoP,
-                   mapping = aes(x = LFC,
-                                 y = LPV))+
-  geom_point(alpha = 0.8,
-             color = "black")+
-  labs(title = "DISEÑO: ANA FERNANDA")+
-  theme_classic()+
-  xlab("Log2(FC)")+
-  ylab("-Log10(p-value)")+
-  geom_hline(yintercept = -log10(p_val),
-             linetype = "dashed")+
-  geom_vline(xintercept = c(-log2(fchange_threshold),log2(fchange_threshold)),
-             linetype = "dashed")+
-  geom_point(data=upregulated,
-             x=upregulated$LFC,
-             y = upregulated$LPV,
-             alpha=1,
-             size = 3,
-             color = "#E64B35B2")+
-  geom_point(data=downregulated,
-             x=downregulated$LFC,
-             y=downregulated$LPV,
-             alpha = 1,
-             size = 3,
-             color = "#3C5488B2")+
-  geom_label_repel(data=top.up,
-                   mapping = aes(x= top.up$LFC,
-                                 y= top.up$LPV),
-                   label = top.up$gene,
-                   max.overlaps = 50)+
-  geom_label_repel(data=top.down,
-                   mapping = aes(x = top.down$LFC,
-                                 y = top.down$LPV),
-                   label =top.down$miRNA,
-                   max.overlaps = 50)
-Volcano
+ggsave("EXAMEN FINAL.jpeg",
+       plot = Volcano,
+       height = 9, width = 16,
+       dpi = 500)
 ```
+
+
